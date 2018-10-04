@@ -1,0 +1,22 @@
+{
+  "name": "private-blockchain",
+  "version": "0.1.0",
+  "description": "Blockchain has the potential to change the way that the world approaches data. Develop Blockchain skills by understanding the data model behind Blockchain by developing your own simplified private blockchain.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lukas Elsner <open@mindrunner.de>",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "crypto-js": "~3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mindrunner/private-blockchain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mindrunner/private-blockchain/issues"
+  },
+  "homepage": "https://github.com/mindrunner/private-blockchain#readme"
+}
