@@ -1,19 +1,33 @@
 #!/usr/bin/node
 'use strict';
 
-const simpleChain = require('./src/simpleChain.js');
+const Block = require('./src/block.js').Block;
+const Blockchain = require('./src/blockchain.js').Blockchain;
 
-let blockchain = new simpleChain.Blockchain();
+void async function() {
+    let blockchain = new Blockchain();
 
-for (var i = 0; i <= 10; i++) {
-    blockchain.addBlock(new simpleChain.Block("test data " + i));
-}
+    await blockchain.init();
+    console.log(await blockchain.getBlock(await blockchain.getBlockHeight()));
 
-blockchain.validateChain();
+    for (var i = 0; i <= 10; i++) {
+        await blockchain.addBlock(new Block("test data " + i));
+        console.log(await blockchain.getBlock(await blockchain.getBlockHeight()))
+    }
 
-let inducedErrorBlocks = [2,4,7];
-for (var i = 0; i < inducedErrorBlocks.length; i++) {
-    blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
-}
+    await blockchain.validateChain();
 
-blockchain.validateChain();
+    console.log(await blockchain.getBlockHeight())
+
+
+}();
+
+
+
+
+// let inducedErrorBlocks = [2,4,7];
+// for (var i = 0; i < inducedErrorBlocks.length; i++) {
+//     blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
+// }
+//
+// blockchain.validateChain();
