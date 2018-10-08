@@ -11,7 +11,9 @@ void async function() {
     console.log(await blockchain.getBlock(await blockchain.getBlockHeight()));
 
     for (var i = 0; i <= 10; i++) {
-        await blockchain.addBlock(new Block("test data " + i));
+        let block = blockchain.createBlock("test data " + i);
+        await blockchain.mineBlock(block);
+
         console.log(await blockchain.getBlock(await blockchain.getBlockHeight()))
     }
 
