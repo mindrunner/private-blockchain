@@ -1,9 +1,9 @@
 exports.Block = class Block {
     constructor(data) {
-        this.hash = "";
+        this.hash = undefined;
         this.height = 0;
         this.body = data;
         this.time = 0;
-        this.previousBlockHash = " ";
+        this.previousBlockHash = undefined;
     }
 };

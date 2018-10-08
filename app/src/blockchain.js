@@ -6,36 +6,33 @@ const GenesisBlock = require('./block.js').GenesisBlock;
 const db = require('./levelSandbox.js');
 
 exports.Blockchain = class Blockchain {
-
     constructor() {
         this.initialized = false;
     }
 
     async init() {
         this.initialized = true;
-        if(await this.getBlockHeight() < 0) {
+        if (await this.getBlockHeight() < 0) {
             await this.mineBlock(this.createBlock("First block in the chain - Genesis block"));
         }
     }
-
 
     createBlock(data) {
         return new Block(data);
     }
 
-
     async mineBlock(newBlock) {
-        if(!this.initialized) {
+        if (!this.initialized) {
             throw "Blockchain uninitialized, please call init() first."
         }
         let blockHeight = await this.getBlockHeight();
         newBlock.height = blockHeight + 1;
 
         newBlock.time = new Date().getTime().toString().slice(0, -3);
-        if (blockHeight > 0) {
+        if (newBlock.height > 0) {
             newBlock.previousBlockHash = (await this.getBlock(blockHeight)).hash;
         }
-        if(newBlock.hash === "") {
+        if (!newBlock.hash) {
             newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
             db.addLevelDBData(newBlock.height, JSON.stringify(newBlock).toString());
         } else {
@@ -49,14 +46,25 @@ exports.Blockchain = class Blockchain {
 
     async getBlock(blockHeight) {
         let block = await db.getLevelDBData(blockHeight);
-        return JSON.parse(JSON.stringify(block));
+        return JSON.parse(block);
+    }
+
+    async rewriteChain() {
+        let errorLog = [];
+        for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
+            if (!await this.validateBlock(i))  {
+                let block = await this.getBlock(i);
+                block.hash = undefined;
+                block.hash = SHA256(JSON.stringify(block)).toString();
+                db.addLevelDBData(block.height, JSON.stringify(block).toString());
+            }
+        }
     }
 
     async validateBlock(blockHeight) {
         let block = await this.getBlock(blockHeight);
         let blockHash = block.hash;
-        console.log(Object.prototype.toString.call(block));
-        block.hash = '';
+        block.hash = undefined;
         let validBlockHash = SHA256(JSON.stringify(block)).toString();
         if (blockHash === validBlockHash) {
             return true;
