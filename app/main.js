@@ -10,7 +10,7 @@ void async function() {
     await blockchain.init();
     console.log(await blockchain.getBlock(await blockchain.getBlockHeight()));
 
-    for (var i = 0; i <= 10; i++) {
+    for (var i = 0; i <= 100; i++) {
         let block = blockchain.createBlock("test data " + i);
         await blockchain.mineBlock(block);
 
@@ -27,9 +27,4 @@ void async function() {
 
 
 
-// let inducedErrorBlocks = [2,4,7];
-// for (var i = 0; i < inducedErrorBlocks.length; i++) {
-//     blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
-// }
-//
-// blockchain.validateChain();
+

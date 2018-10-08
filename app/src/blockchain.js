@@ -8,6 +8,7 @@ const db = require('./levelSandbox.js');
 exports.Blockchain = class Blockchain {
     constructor() {
         this.initialized = false;
+        this.difficulty = 3;
     }
 
     async init() {
@@ -33,7 +34,10 @@ exports.Blockchain = class Blockchain {
             newBlock.previousBlockHash = (await this.getBlock(blockHeight)).hash;
         }
         if (!newBlock.hash) {
-            newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+            do {
+                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+                newBlock.nonce++;
+            } while (!(Number(newBlock.hash.substring(0, this.difficulty + 1)) === 0));
             db.addLevelDBData(newBlock.height, JSON.stringify(newBlock).toString());
         } else {
             throw "Cannot mine already hashed Block."
@@ -47,6 +51,14 @@ exports.Blockchain = class Blockchain {
     async getBlock(blockHeight) {
         let block = await db.getLevelDBData(blockHeight);
         return JSON.parse(block);
+    }
+
+
+    async createError(num) {
+        let block = await this.getBlock(num);
+        // rehashing the block with current hash != undefined will create a wrong hash value
+        block.hash = SHA256(JSON.stringify(block)).toString();
+        db.addLevelDBData(block.height, JSON.stringify(block).toString());
     }
 
     async rewriteChain() {
@@ -77,7 +89,8 @@ exports.Blockchain = class Blockchain {
     async validateChain() {
         let errorLog = [];
         for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
-            if (!await this.validateBlock(i)) errorLog.push(i);
+            if (!await this.validateBlock(i))
+                errorLog.push(i);
             let blockHash = (await this.getBlock(i)).hash;
             let previousHash = (await this.getBlock(i + 1)).previousBlockHash;
             if (blockHash !== previousHash) {
