@@ -2,19 +2,56 @@
 
 const SHA256 = require('crypto-js/sha256');
 const Block = require('./block.js').Block;
-const GenesisBlock = require('./block.js').GenesisBlock;
 const db = require('./levelSandbox.js');
 
+/**
+ * Private methods
+ * @private
+ */
+const _getDifficulty = Symbol("getDifficulty");
+const _hashBlock = Symbol("hashBlock");
+
+
+/**
+ * Class which represents the Blockchain, handles the persistence and offers method for handling Block data structures.
+ *
+ */
 exports.Blockchain = class Blockchain {
+    /**
+     * @constructor
+     *
+     */
     constructor() {
         this.initialized = false;
+        /**
+         * This can be either a Hash-Prefix (e.g. "000") or "auto".
+         * See _getDifficulty()
+         */
         this.difficulty = "auto";
     }
 
+    /**
+     * Initializes the Blockchain, creates Genesis @Block if nessesary. Needs to be called immediately after
+     * constructing the object.
+     *
+     * @return {Promise<void>}
+     */
+    async init() {
+        this.initialized = true;
+        if (await Blockchain.getBlockHeight() < 0) {
+            await this.mineBlock(this.createBlock("First block in the chain - Genesis block"));
+        }
+    }
 
-    async getDifficulty() {
-        if(this.difficulty === "auto") {
-            let len = (await this.getBlockHeight()).toString().length;
+    /**
+     * Calculates the current mining difficulty. Either a fixed hash-prefix, or a "000.."-prefix determined by
+     * getBlockHeight()
+     *
+     * @returns {Promise<string>} The current mining difficulty
+     */
+    async [_getDifficulty]() {
+        if (this.difficulty === "auto") {
+            let len = (await Blockchain.getBlockHeight()).toString().length;
             let diff = "0";
             while (len-- > 0) {
                 diff += "0";
@@ -25,73 +62,80 @@ exports.Blockchain = class Blockchain {
         }
     }
 
-    async init() {
-        this.initialized = true;
-        if (await this.getBlockHeight() < 0) {
-            await this.mineBlock(this.createBlock("First block in the chain - Genesis block"));
-        }
+    /**
+     * Returns the hash of a given Block
+     *
+     * @param block The Block of which hash to be returned
+     * @returns The Block's hash
+     * @private
+     */
+    static [_hashBlock](block) {
+        let hash = block.hash;
+        block.hash = undefined;
+        let blockHash = SHA256(JSON.stringify(block)).toString();
+        block.hash = hash;
+        return blockHash;
     }
 
-    createBlock(data) {
-        return new Block(data);
+    /**
+     * Eveluates the Blockheight of the Blockchain
+     *
+     * @returns {Promise<*|void>} The Blockchain's Blockheight
+     */
+    static async getBlockHeight() {
+        return await db.getLastKey();
     }
 
+    /**
+     * Gets a Block based on the Block Height
+     *
+     * @param blockHeight Blockheight of Block to be returned
+     * @returns {Promise<Block>} if Block found, undefined otherwise
+     */
+    static async getBlock(blockHeight) {
+        let block = await db.getLevelDBData(blockHeight);
+        return (block ? JSON.parse(block) : undefined);
+    }
+
+    /**
+     * Mines a new Block and add it to the persistence layer
+     *
+     * @param newBlock The Block to me mined
+     * @return {Promise<void>}
+     */
     async mineBlock(newBlock) {
         if (!this.initialized) {
             throw "Blockchain uninitialized, please call init() first."
         }
-        let blockHeight = await this.getBlockHeight();
+        let blockHeight = await Blockchain.getBlockHeight();
         newBlock.height = blockHeight + 1;
-
         newBlock.time = new Date().getTime().toString().slice(0, -3);
         if (newBlock.height > 0) {
-            newBlock.previousBlockHash = (await this.getBlock(blockHeight)).hash;
+            newBlock.previousBlockHash = (await Blockchain.getBlock(blockHeight)).hash;
         }
         if (!newBlock.hash) {
             do {
-                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
                 newBlock.nonce++;
-            } while (!newBlock.hash.startsWith(await this.getDifficulty()));
+                newBlock.hash = Blockchain[_hashBlock](newBlock);
+            } while (!newBlock.hash.startsWith(await this[_getDifficulty]()));
             db.addLevelDBData(newBlock.height, JSON.stringify(newBlock).toString());
         } else {
             throw "Cannot mine already hashed Block."
         }
     }
 
-    async getBlockHeight() {
-        return await db.getLastKey();
-    }
-
-    async getBlock(blockHeight) {
-        let block = await db.getLevelDBData(blockHeight);
-        return JSON.parse(block);
-    }
-
-
-    async createError(num) {
-        let block = await this.getBlock(num);
-        // rehashing the block with current hash != undefined will create a wrong hash value
-        block.hash = SHA256(JSON.stringify(block)).toString();
-        db.addLevelDBData(block.height, JSON.stringify(block).toString());
-    }
-
-    async rewriteChain() {
-        let errorLog = [];
-        for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
-            // if (!await this.validateBlock(i))  {
-                let block = await this.getBlock(i);
-                block.hash = undefined;
-                block.hash = SHA256(JSON.stringify(block)).toString();
-                db.addLevelDBData(block.height, JSON.stringify(block).toString());
-            // }
-        }
-    }
-
+    /**
+     * Validates a single Block
+     *
+     * @param blockHeight the block height to check
+     *
+     * @return {Promise<boolean>} true if block is valid, false otherwise
+     */
     async validateBlock(blockHeight) {
-        let block = await this.getBlock(blockHeight);
+        let block = await Blockchain.getBlock(blockHeight);
         let blockHash = block.hash;
         block.hash = undefined;
-        let validBlockHash = SHA256(JSON.stringify(block)).toString();
+        let validBlockHash = Blockchain[_hashBlock](block);
         if (blockHash === validBlockHash) {
             return true;
         } else {
@@ -100,13 +144,18 @@ exports.Blockchain = class Blockchain {
         }
     }
 
+    /**
+     * Validates the whole Blockchain
+     *
+     * @returns {Promise<boolean>} true if chain is valid, false otherwise
+     */
     async validateChain() {
         let errorLog = [];
-        for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
+        for (let i = 0; i < await Blockchain.getBlockHeight() - 1; i++) {
             if (!await this.validateBlock(i))
                 errorLog.push(i);
-            let blockHash = (await this.getBlock(i)).hash;
-            let previousHash = (await this.getBlock(i + 1)).previousBlockHash;
+            let blockHash = (await Blockchain.getBlock(i)).hash;
+            let previousHash = (await Blockchain.getBlock(i + 1)).previousBlockHash;
             if (blockHash !== previousHash) {
                 errorLog.push(i);
             }
