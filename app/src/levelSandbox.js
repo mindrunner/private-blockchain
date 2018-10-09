@@ -4,9 +4,9 @@ const level = require('level');
 const chainDB = './chaindata';
 const db = level(chainDB);
 
-exports.addLevelDBData = function addLevelDBData(key, value) {
+exports.addLevelDBData = async function addLevelDBData(key, value) {
     try {
-        db.put(key, value);
+        await db.put(key, value);
     } catch (e) {
         console.log('Block ' + key + ' submission failed', e);
     }
@@ -27,5 +27,6 @@ exports.getLastKey = async function getLastKey() {
     while (true)
         if (undefined === await this.getLevelDBData(max++))
             return max - 2;
+
 
 };

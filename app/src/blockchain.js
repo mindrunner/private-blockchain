@@ -38,10 +38,10 @@ exports.Blockchain = class Blockchain {
      */
     async init() {
         this.initialized = true;
-        if (await this.getBlockHeight() < 0) {
+        this.blockHeight = await db.getLastKey();
+        if (this.getBlockHeight() < 0) {
             await this.mineBlock(new Block("First block in the chain - Genesis block"));
         }
-        this.blockHeight = await db.getLastKey();
     }
 
     /**
@@ -52,7 +52,7 @@ exports.Blockchain = class Blockchain {
      */
     async [_getDifficulty]() {
         if (this.difficulty === "auto") {
-            let len = (await this.getBlockHeight()).toString().length;
+            let len = (this.getBlockHeight()).toString().length;
             let diff = "0";
             while (len-- > 0) {
                 diff += "0";
@@ -81,9 +81,9 @@ exports.Blockchain = class Blockchain {
     /**
      * Eveluates the Blockheight of the Blockchain
      *
-     * @returns {Promise<*|void>} The Blockchain's Blockheight
+     * @returns The Blockchain's Blockheight
      */
-    async getBlockHeight() {
+    getBlockHeight() {
         return this.blockHeight;
     }
 
@@ -108,7 +108,7 @@ exports.Blockchain = class Blockchain {
         if (!this.initialized) {
             throw "Blockchain uninitialized, please call init() first."
         }
-        let blockHeight = await this.getBlockHeight();
+        let blockHeight = this.getBlockHeight();
         newBlock.height = blockHeight + 1;
         newBlock.time = new Date().getTime().toString().slice(0, -3);
         if (newBlock.height > 0) {
@@ -119,7 +119,7 @@ exports.Blockchain = class Blockchain {
                 newBlock.nonce++;
                 newBlock.hash = Blockchain[_hashBlock](newBlock);
             } while (!newBlock.hash.startsWith(await this[_getDifficulty]()));
-            db.addLevelDBData(newBlock.height, JSON.stringify(newBlock));
+            await db.addLevelDBData(newBlock.height, JSON.stringify(newBlock));
             this.blockHeight = newBlock.height;
         } else {
             throw "Cannot mine already hashed Block."
@@ -153,13 +153,15 @@ exports.Blockchain = class Blockchain {
      */
     async validateChain() {
         let errorLog = [];
-        for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
+        for (let i = 0; i < this.getBlockHeight(); i++) {
             if (!await this.validateBlock(i))
                 errorLog.push(i);
-            let blockHash = (await Blockchain.getBlock(i)).hash;
-            let previousHash = (await Blockchain.getBlock(i + 1)).previousBlockHash;
-            if (blockHash !== previousHash) {
-                errorLog.push(i);
+            if (i > 0) {
+                let blockHash = (await Blockchain.getBlock(i - 1)).hash;
+                let previousHash = (await Blockchain.getBlock(i)).previousBlockHash;
+                if (blockHash !== previousHash) {
+                    errorLog.push(i);
+                }
             }
         }
         if (errorLog.length > 0) {
