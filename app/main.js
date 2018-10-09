@@ -13,17 +13,17 @@ void async function() {
     // Always call init() after constructing object
     await blockchain.init();
 
-    console.log(await Blockchain.getBlock(await Blockchain.getBlockHeight()));
+    console.log(await Blockchain.getBlock(await blockchain.getBlockHeight()));
 
-    for (var i = 0; i <= 10; i++) {
+    for (var i = 0; i <= 1000; i++) {
         let block = new Block("test data " + i);
         await blockchain.mineBlock(block);
-        console.log(await Blockchain.getBlock(await Blockchain.getBlockHeight()))
+        console.log(await Blockchain.getBlock(await blockchain.getBlockHeight()))
     }
 
     await blockchain.validateChain();
 
-    console.log(await Blockchain.getBlockHeight())
+    console.log(await blockchain.getBlockHeight())
 
 }();
 
