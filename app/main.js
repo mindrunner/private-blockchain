@@ -1,19 +1,33 @@
 #!/usr/bin/node
 'use strict';
 
-const simpleChain = require('./src/simpleChain.js');
+const Block = require('./src/block.js').Block;
+const Blockchain = require('./src/blockchain.js').Blockchain;
 
-let blockchain = new simpleChain.Blockchain();
+/**
+ * This is an example on how to use the Blockchain.
+ */
+void async function() {
+    let blockchain = new Blockchain();
 
-for (var i = 0; i <= 10; i++) {
-    blockchain.addBlock(new simpleChain.Block("test data " + i));
-}
+    // Always call init() after constructing object
+    await blockchain.init();
 
-blockchain.validateChain();
+    console.log(await Blockchain.getBlock(await Blockchain.getBlockHeight()));
 
-let inducedErrorBlocks = [2,4,7];
-for (var i = 0; i < inducedErrorBlocks.length; i++) {
-    blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
-}
+    for (var i = 0; i <= 10; i++) {
+        let block = new Block("test data " + i);
+        await blockchain.mineBlock(block);
+        console.log(await Blockchain.getBlock(await Blockchain.getBlockHeight()))
+    }
 
-blockchain.validateChain();
+    await blockchain.validateChain();
+
+    console.log(await Blockchain.getBlockHeight())
+
+}();
+
+
+
+
+
