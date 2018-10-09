@@ -3,10 +3,12 @@
 
 const Blockchain = require('../src/blockchain.js').Blockchain;
 
-void async function() {
+void async function () {
     let blockchain = new Blockchain();
     await blockchain.init();
-    await blockchain.rewriteChain();
-    await blockchain.validateChain();
+    if (!(await blockchain.validateChain())) {
+        await blockchain.rewriteChain();
+        await blockchain.validateChain();
+    }
 }();
 

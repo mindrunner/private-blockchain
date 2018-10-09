@@ -8,7 +8,21 @@ const db = require('./levelSandbox.js');
 exports.Blockchain = class Blockchain {
     constructor() {
         this.initialized = false;
-        this.difficulty = 3;
+        this.difficulty = "auto";
+    }
+
+
+    async getDifficulty() {
+        if(this.difficulty === "auto") {
+            let len = (await this.getBlockHeight()).toString().length;
+            let diff = "0";
+            while (len-- > 0) {
+                diff += "0";
+            }
+            return diff;
+        } else {
+            return this.difficulty;
+        }
     }
 
     async init() {
@@ -37,7 +51,7 @@ exports.Blockchain = class Blockchain {
             do {
                 newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
                 newBlock.nonce++;
-            } while (!(Number(newBlock.hash.substring(0, this.difficulty + 1)) === 0));
+            } while (!newBlock.hash.startsWith(await this.getDifficulty()));
             db.addLevelDBData(newBlock.height, JSON.stringify(newBlock).toString());
         } else {
             throw "Cannot mine already hashed Block."
@@ -64,12 +78,12 @@ exports.Blockchain = class Blockchain {
     async rewriteChain() {
         let errorLog = [];
         for (let i = 0; i < await this.getBlockHeight() - 1; i++) {
-            if (!await this.validateBlock(i))  {
+            // if (!await this.validateBlock(i))  {
                 let block = await this.getBlock(i);
                 block.hash = undefined;
                 block.hash = SHA256(JSON.stringify(block)).toString();
                 db.addLevelDBData(block.height, JSON.stringify(block).toString());
-            }
+            // }
         }
     }
 
@@ -100,8 +114,10 @@ exports.Blockchain = class Blockchain {
         if (errorLog.length > 0) {
             console.log('Block errors = ' + errorLog.length);
             console.log('Blocks: ' + errorLog);
+            return false;
         } else {
             console.log('No errors detected');
+            return true;
         }
     }
 };
