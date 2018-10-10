@@ -40,7 +40,7 @@ exports.Blockchain = class Blockchain {
         this.initialized = true;
         this.blockHeight = await db.getLastKey();
         if (this.getBlockHeight() < 0) {
-            await this.mineBlock(new Block("First block in the chain - Genesis block"));
+            await this.addBlock(new Block("First block in the chain - Genesis block"));
         }
     }
 
@@ -104,7 +104,7 @@ exports.Blockchain = class Blockchain {
      * @param newBlock The Block to me mined
      * @return {Promise<void>}
      */
-    async mineBlock(newBlock) {
+    async addBlock(newBlock) {
         if (!this.initialized) {
             throw "Blockchain uninitialized, please call init() first."
         }
@@ -153,7 +153,7 @@ exports.Blockchain = class Blockchain {
      */
     async validateChain() {
         let errorLog = [];
-        for (let i = 0; i < this.getBlockHeight(); i++) {
+        for (let i = 0; i <= this.getBlockHeight(); i++) {
             if (!await this.validateBlock(i))
                 errorLog.push(i);
             if (i > 0) {
