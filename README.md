@@ -16,35 +16,35 @@ Installing Node and NPM is pretty straightforward using the installer package av
 ```
 npm init
 ```
-- Install crypto-js with --save flag to save dependency to our package.json file
+- Install dependencies
 ```
-npm install crypto-js --save
-```
-- Install level with --save flag
-```
-npm install level --save
+npm install
 ```
 
-## Testing
+## Testing library code
 
-To test code:
 1: Open a command prompt or shell terminal after install node.js.
-2: Enter a node session, also known as REPL (Read-Evaluate-Print-Loop).
+2: run main.js with node interpreter
 ```
-node
+node app/main.js
 ```
-3: Copy and paste your code into your node session
-4: Instantiate blockchain with blockchain variable
+
+## Testing web code
+
+1: Open a command prompt or shell terminal after install node.js.
+2: run app.js with node interpreter
+
 ```
-let blockchain = new Blockchain();
+node app/app.js
 ```
-5: Generate 10 blocks using a for loop
+
+3: Use POST to Create a Block
 ```
-for (var i = 0; i <= 10; i++) {
-  blockchain.addBlock(new Block("test data "+i));
-}
+curl -i -H "Accept: application/json" -H "Content-Type: text/plain" --data "Some Data" -X POST  http://localhost:8000/block
 ```
-6: Validate blockchain
+
+4: Use GET to Get a Block
 ```
-blockchain.validateChain();
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET  http://localhost:8000/block/1
+
 ```

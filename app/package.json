@@ -10,7 +10,9 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "crypto-js": "~3",
-    "level": "^4.0.0"
+    "level": "^4.0.0",
+    "express": "^4.16.4",
+    "body-parser": "^1.18.3"
   },
   "repository": {
     "type": "git",
