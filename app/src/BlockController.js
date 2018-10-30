@@ -18,6 +18,13 @@ class BlockController {
         this.blockchain.init();
         this.getBlockByIndex();
         this.postNewBlock();
+        this.getWelcomeMessage();
+    }
+
+    getWelcomeMessage() {
+        this.app.get("/", async (req, res) => {
+            res.end("Welcome to Private Blockchain")
+        });
     }
 
     /**

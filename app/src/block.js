@@ -17,6 +17,6 @@ exports.Block = class Block {
         this.body = data;
         this.time = 0;
         this.nonce = 0;
-        this.previousBlockHash = undefined;
+        this.previousBlockHash = "";
     }
 };
