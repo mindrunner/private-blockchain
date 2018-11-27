@@ -11,11 +11,9 @@ class BlockController {
      * Constructor to create a new BlockController, you need to initialize here all your endpoints
      * @param {*} app
      */
-    constructor(app) {
+    constructor(app, blockchain) {
         this.app = app;
-        this.blockchain = new Blockchain();
-        //TODI: Can we call this without await>?
-        this.blockchain.init();
+        this.blockchain = blockchain;
         this.getBlockByIndex();
         this.postNewBlock();
         this.getWelcomeMessage();
@@ -65,6 +63,6 @@ class BlockController {
  * Exporting the BlockController class
  * @param {*} app
  */
-module.exports = (app) => {
-    return new BlockController(app);
+module.exports = (app, blockchain) => {
+    return new BlockController(app, blockchain);
 };

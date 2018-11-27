@@ -9,10 +9,17 @@
   "author": "Lukas Elsner <open@mindrunner.de>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "bitcoinjs-lib": "^4.0.2",
+    "bitcoinjs-message": "^2.0.0",
+    "body-parser": "^1.18.3",
     "crypto-js": "~3",
-    "level": "^4.0.0",
     "express": "^4.16.4",
-    "body-parser": "^1.18.3"
+    "hex2ascii": "0.0.3",
+    "level": "^4.0.0",
+    "mocha": "^5.2.0",
+    "should": "^13.2.3",
+    "sleep": "^5.2.3",
+    "supertest": "^3.3.0"
   },
   "repository": {
     "type": "git",
