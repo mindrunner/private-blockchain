@@ -19,7 +19,8 @@
     "mocha": "^5.2.0",
     "should": "^13.2.3",
     "sleep": "^5.2.3",
-    "supertest": "^3.3.0"
+    "supertest": "^3.3.0",
+    "bs58": "^4.0.1"
   },
   "repository": {
     "type": "git",

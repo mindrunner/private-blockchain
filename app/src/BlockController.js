@@ -1,6 +1,15 @@
 const SHA256 = require('crypto-js/sha256');
+const bitcoin = require("bitcoinjs-lib");
+const RequestObject = require("./requestObject").RequestObject;
 const Block = require('./block.js').Block;
 const Blockchain = require('./blockchain.js').Blockchain;
+const util = require('util');
+const ValidRequest = require("./validRequest").ValidRequest;
+const bs58 = require('bs58');
+
+
+
+const TimeoutRequestsWindowTime = 5 * 60 * 1000;
 
 /**
  * Controller Definition to encapsulate routes to work with blocks
@@ -14,9 +23,14 @@ class BlockController {
     constructor(app, blockchain) {
         this.app = app;
         this.blockchain = blockchain;
+        this.mempool = [];
+        this.mempoolValid = [];
+        this.timeoutRequests = [];
         this.getBlockByIndex();
         this.postNewBlock();
         this.getWelcomeMessage();
+        this.requestValidation();
+        this.validateMessage();
     }
 
     getWelcomeMessage() {
@@ -57,6 +71,117 @@ class BlockController {
             }
         });
     }
+
+    removeValidationRequest(walletAddress) {
+        delete this.mempool[walletAddress];
+        delete this.timeoutRequests[walletAddress];
+    }
+
+    addValidationRequest(requestObject) {
+        let self = this;
+        this.mempool[requestObject.walletAddress] = requestObject;
+        this.timeoutRequests[requestObject.walletAddress] = setTimeout(function () {
+            self.removeValidationRequest(requestObject.walletAddress)
+        }, TimeoutRequestsWindowTime);
+    }
+
+
+    /**
+     */
+    requestValidation() {
+        let self = this;
+        this.app.post("/requestValidation", async (req, res) => {
+            if (req.body !== undefined && req.body !== "" && Object.keys(req.body).length !== 0) {
+                try {
+                    bitcoin.address.toOutputScript(req.body.address, bitcoin.networks.bitcoin);
+                } catch (e) {
+                    res.status(400);
+                    res.json({message: "Address invalid or missing"});
+                    return;
+                }
+
+                let requestObject = null;
+
+                if (req.body.address in this.mempool) {
+                    requestObject = self.mempool[req.body.address];
+                } else {
+                    requestObject = new RequestObject();
+                    requestObject.walletAddress = req.body.address;
+                    requestObject.requestTimeStamp = new Date().getTime().toString().slice(0, -3);
+                    requestObject.message = util.format("%s:%s:%s", req.body.address, requestObject.requestTimeStamp, "starRegistry");
+                    self.addValidationRequest(requestObject);
+                }
+
+                let timeElapse = (new Date().getTime().toString().slice(0, -3)) - requestObject.requestTimeStamp;
+                requestObject.validationWindow = (TimeoutRequestsWindowTime / 1000) - timeElapse;
+
+                res.status(201);
+                res.json(requestObject);
+            } else {
+                res.status(400);
+                res.json({message: "Bad Request"});
+            }
+        });
+    }
+
+
+    /**
+     */
+    validateMessage() {
+        this.app.post("/message-signature/validate", async (req, res) => {
+            if (
+                req.body !== undefined
+                && req.body !== ""
+                && req.body.address !== undefined
+                && req.body.address !== ""
+                && req.body.signature !== undefined
+                && req.body.signature !== ""
+                && Object.keys(req.body).length !== 0
+            ) {
+
+                let address = req.body.address;
+                let signature = req.body.signature;
+                if (address in this.mempool) {
+                    let requestObject = this.mempool[address];
+                    const bitcoinMessage = require('bitcoinjs-message');
+                    let isValid = false;
+                    try {
+                        let addressbs58 = bs58.encode(Buffer.from(address));
+                        isValid = bitcoinMessage.verify(requestObject.message, address, signature);
+                    } catch (e) {
+                        res.status(400);
+                        res.json({message: e.message});
+                        return;
+                    }
+
+                    let validRequest = new ValidRequest();
+                    requestObject.messageSignature = isValid;
+                    validRequest.status = requestObject;
+
+                    let timeElapse = (new Date().getTime().toString().slice(0, -3)) - requestObject.requestTimeStamp;
+                    requestObject.validationWindow = (TimeoutRequestsWindowTime / 1000) - timeElapse;
+
+                    if (isValid) {
+                        this.mempoolValid[address] = validRequest;
+                        this.removeValidationRequest(address);
+
+                        res.status(201);
+                        res.json(validRequest);
+                    } else {
+                        res.status(400);
+                        res.json({message: "Bad Signature"});
+                    }
+                } else {
+                    res.status(404);
+                    res.json({message: "Request not found!"});
+                }
+            } else {
+                res.status(400);
+                res.json({message: "Bad Request"});
+            }
+        });
+    }
+
 }
 
 /**
