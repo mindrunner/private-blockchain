@@ -4,10 +4,8 @@ const RequestObject = require("./requestObject").RequestObject;
 const Block = require('./block.js').Block;
 const Blockchain = require('./blockchain.js').Blockchain;
 const util = require('util');
+const Star = require("./star").Star;
 const ValidRequest = require("./validRequest").ValidRequest;
-const bs58 = require('bs58');
-
-
 
 const TimeoutRequestsWindowTime = 5 * 60 * 1000;
 
@@ -51,6 +49,8 @@ class BlockController {
                 res.json({message: "Not Found"});
 
             }
+
+            block.storyDecoded = hex2ascii(block.body.star.story);
             res.json(block);
         });
     }
@@ -61,14 +61,42 @@ class BlockController {
     postNewBlock() {
         this.app.post("/block", async (req, res) => {
             if (req.body !== undefined && req.body !== "" && Object.keys(req.body).length !== 0) {
-                let block = new Block(req.body);
-                await this.blockchain.addBlock(block);
-                res.status(201);
-                res.json(block);
+
+                if (req.body.address in this.mempoolValid) {
+                    let star = new Star();
+                    star.cen = req.body.star.cen;
+                    star.ra = req.body.star.ra;
+                    star.dec = req.body.star.dec;
+                    star.mag = req.body.star.mag;
+
+                    let body = {
+                        address: req.body.address,
+                        star: {
+                            ra: req.body.star.ra,
+                            dec: req.body.star.dec,
+                            mag: req.body.star.mag,
+                            cen: req.body.star.cen,
+                            story: Buffer(req.body.star.story).toString('hex')
+                        }
+                    };
+                    let block = new Block(body);
+                    await this.blockchain.addBlock(block);
+
+                    block.storyDecoded = hex2ascii(block.body.star.story);
+
+
+                    res.status(201);
+                    res.json(block);
+                } else {
+                    res.status(404);
+                    res.json({message: "Request not found!"});
+                }
             } else {
                 res.status(400);
                 res.json({message: "Bad Request"});
             }
+
+
         });
     }
 
@@ -146,7 +174,6 @@ class BlockController {
                     const bitcoinMessage = require('bitcoinjs-message');
                     let isValid = false;
                     try {
-                        let addressbs58 = bs58.encode(Buffer.from(address));
                         isValid = bitcoinMessage.verify(requestObject.message, address, signature);
                     } catch (e) {
                         res.status(400);
@@ -181,7 +208,6 @@ class BlockController {
             }
         });
     }
-
 }
 
 /**
