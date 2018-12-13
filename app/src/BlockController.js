@@ -1,4 +1,3 @@
-const SHA256 = require('crypto-js/sha256');
 const bitcoin = require("bitcoinjs-lib");
 const RequestObject = require("./requestObject").RequestObject;
 const Block = require('./block.js').Block;
@@ -29,6 +28,7 @@ class BlockController {
         this.getWelcomeMessage();
         this.requestValidation();
         this.validateMessage();
+        this.getBlockByHash();
     }
 
     getWelcomeMessage() {
@@ -50,11 +50,25 @@ class BlockController {
 
             }
 
-            block.storyDecoded = hex2ascii(block.body.star.story);
+            block.body.star.storyDecoded = Buffer.from(block.body.star.story, "hex").toString("ascii");
             res.json(block);
         });
     }
 
+    getBlockByHash() {
+        this.app.get("/stars/:hash", async (req, res) => {
+            // Add your code here
+            let block = await Blockchain.getBlockByHash(req.params.hash);
+            if (undefined === block) {
+                res.status(404);
+                res.json({message: "Not Found"});
+                return;
+            }
+
+            block.body.star.storyDecoded = Buffer.from(block.body.star.story, "hex").toString("ascii");
+            res.json(block);
+        });
+    }
     /**
      * Implement a POST Endpoint to add a new Block, url: "/api/block"
      */
@@ -74,15 +88,15 @@ class BlockController {
                         star: {
                             ra: req.body.star.ra,
                             dec: req.body.star.dec,
-                            mag: req.body.star.mag,
-                            cen: req.body.star.cen,
-                            story: Buffer(req.body.star.story).toString('hex')
+                            mag: req.body.star.mag | null,
+                            cen: req.body.star.cen | null,
+                            story: Buffer.from(req.body.star.story, 'ascii').toString('hex')
                         }
                     };
                     let block = new Block(body);
                     await this.blockchain.addBlock(block);
 
-                    block.storyDecoded = hex2ascii(block.body.star.story);
+                    block.body.star.storyDecoded = Buffer.from(block.body.star.story, "hex").toString("ascii");
 
 
                     res.status(201);

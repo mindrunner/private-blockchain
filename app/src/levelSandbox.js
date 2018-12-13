@@ -27,6 +27,26 @@ exports.getLastKey = async function getLastKey() {
     while (true)
         if (undefined === await this.getLevelDBData(max++))
             return max - 2;
+};
 
 
+// Get block by hash
+exports.getBlockByHash = async function getBlockByHash(hash) {
+    let block = null;
+    return new Promise(function (resolve, reject) {
+        db.createValueStream()
+            .on('data', function (data) {
+
+                let b = JSON.parse(data);
+                if (b.hash === hash) {
+                    block = b;
+                }
+            })
+            .on('error', function (err) {
+                reject(err)
+            })
+            .on('close', function () {
+                resolve(block);
+            });
+    });
 };

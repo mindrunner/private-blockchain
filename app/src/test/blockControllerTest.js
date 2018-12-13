@@ -1,10 +1,6 @@
-const should = require("should");
-const assert = require("assert");
 const supertest = require("supertest");
 const bitcoin = require("bitcoinjs-lib");
 const bitcoinMessage = require("bitcoinjs-message");
-const RequestObject = require("../requestObject").RequestObject;
-const Block = require('../block.js').Block;
 const BlockAPI = require('../../app').BlockAPI;
 const Blockchain = require('../blockchain').Blockchain;
 
@@ -12,7 +8,8 @@ const Blockchain = require('../blockchain').Blockchain;
 const testAddress = "16r7Wz413PvSAQmrsopvs2gJwPbcddc9Sm";
 const keyPair = bitcoin.ECPair.fromWIF('KwvZLcJAomJtui1VaNpbeJ8DY2MJoCcu6SJivw3NZFFkLWW473ka');
 const privateKey = keyPair.privateKey;
-var signature = null;
+let signature = null;
+let starhash = null;
 
 describe("BlockController", function () {
     describe("Add Block", function () {
@@ -34,6 +31,16 @@ describe("BlockController", function () {
                 .end(done)
         });
 
+        it("validate request", function (done) {
+            supertest(blockAPI.app)
+                .post("/message-signature/validate")
+                .send({address: testAddress, signature: signature})
+                .expect((res) => {
+                    if (!('registerStar' in res.body)) throw new Error("missing next key");
+                    if (!(res.body.status.validationWindow <= 300)) throw new Error("wrong validation window");
+                })
+                .end(done)
+        });
         it("creates a star", function (done) {
             let star = {
                 "address": testAddress,
@@ -48,9 +55,20 @@ describe("BlockController", function () {
                 .post("/block")
                 .send(star)
                 .expect((res) => {
-                    if (!('storyDecoded' in res.body)) throw new Error("missing decoded story");
+                    if (!('storyDecoded' in res.body.body.star)) throw new Error("missing decoded story");
+                    starhash = res.body.hash;
                 })
                 .end(done)
         });
+
+        it("get star by hash", function (done) {
+            supertest(blockAPI.app)
+                .get("/stars/" + starhash)
+                .expect((res) => {
+                    if (!('storyDecoded' in res.body.body.star)) throw new Error("missing decoded story");
+                })
+                .end(done)
+        });
+
     })
 });
