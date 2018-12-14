@@ -2,21 +2,23 @@
 const express = require("express");
 //Importing BodyParser.js module
 const bodyParser = require("body-parser");
+const Blockchain = require('./src/blockchain').Blockchain;
 
 /**
  * Class Definition for the REST API
  */
-class BlockAPI {
+exports.BlockAPI = class BlockAPI {
 
     /**
      * Constructor that allows initialize the class
      */
-    constructor() {
+    constructor(blockchain) {
         this.app = express();
+        this.blockchain = blockchain;
         this.initExpress();
         this.initExpressMiddleWare();
         this.initControllers();
-        this.start();
+        // this.start();
     }
 
     /**
@@ -39,7 +41,7 @@ class BlockAPI {
      * Initilization of all the controllers
      */
     initControllers() {
-        require("./src/BlockController.js")(this.app);
+        require("./src/BlockController.js")(this.app, this.blockchain);
     }
 
     /**
@@ -47,11 +49,13 @@ class BlockAPI {
      */
     start() {
         let self = this;
-        this.app.listen(this.app.get("port"), () => {
+        return this.app.listen(this.app.get("port"), () => {
             console.log(`Server Listening for port: ${self.app.get("port")}`);
         });
     }
+};
 
-}
-
-new BlockAPI();
+const blockchain = new Blockchain();
+blockchain.init().then(() => {
+    new exports.BlockAPI(blockchain).start();
+});

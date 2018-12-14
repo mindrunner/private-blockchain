@@ -27,7 +27,7 @@ exports.Blockchain = class Blockchain {
          * This can be either a Hash-Prefix (e.g. "000") or "auto".
          * See _getDifficulty()
          */
-        this.difficulty = "auto";
+        this.difficulty = "0";
     }
 
     /**
@@ -96,6 +96,28 @@ exports.Blockchain = class Blockchain {
     static async getBlock(blockHeight) {
         let block = await db.getLevelDBData(blockHeight);
         return (block ? JSON.parse(block) : undefined);
+    }
+
+    /**
+     * Gets a Block based on the Hash
+     *
+     * @param hash the hash
+     * @returns {Promise<Block>} if Block found, undefined otherwise
+     */
+    static async getBlockByHash(hash) {
+        let block = await db.getBlockByHash(hash);
+        return (block ? block : undefined);
+    }
+
+    /**
+     * Gets a list of Blocks based on the Wallet Address
+     *
+     * @param address the wallet address
+     * @returns {Promise<Block>} if Block found, undefined otherwise
+     */
+    static async getBlocksByWalletAddress(address) {
+        let block = await db.getBlocksByWalletAddress(address);
+        return (block ? block : undefined);
     }
 
     /**
