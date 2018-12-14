@@ -109,6 +109,16 @@ exports.Blockchain = class Blockchain {
         return (block ? block : undefined);
     }
 
+    /**
+     * Gets a list of Blocks based on the Wallet Address
+     *
+     * @param address the wallet address
+     * @returns {Promise<Block>} if Block found, undefined otherwise
+     */
+    static async getBlocksByWalletAddress(address) {
+        let block = await db.getBlocksByWalletAddress(address);
+        return (block ? block : undefined);
+    }
 
     /**
      * Mines a new Block and add it to the persistence layer

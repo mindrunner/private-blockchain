@@ -19,6 +19,7 @@ describe("BlockController", function () {
             await blockchain.init();
             blockAPI = new BlockAPI(blockchain);
         });
+
         it("creates a validation request", function (done) {
             supertest(blockAPI.app)
                 .post("/requestValidation")
@@ -41,6 +42,7 @@ describe("BlockController", function () {
                 })
                 .end(done)
         });
+
         it("creates a star", function (done) {
             let star = {
                 "address": testAddress,
@@ -63,12 +65,20 @@ describe("BlockController", function () {
 
         it("get star by hash", function (done) {
             supertest(blockAPI.app)
-                .get("/stars/" + starhash)
+                .get("/stars/hash:" + starhash)
                 .expect((res) => {
                     if (!('storyDecoded' in res.body.body.star)) throw new Error("missing decoded story");
                 })
                 .end(done)
         });
 
+        it("get stars by address", function (done) {
+            supertest(blockAPI.app)
+                .get("/stars/address:" + testAddress)
+                .expect((res) => {
+                    if (res.body.length <= 0) throw new Error("could not find stars");
+                })
+                .end(done)
+        });
     })
 });

@@ -29,6 +29,7 @@ class BlockController {
         this.requestValidation();
         this.validateMessage();
         this.getBlockByHash();
+        this.getBlocksByWalletAddress()
     }
 
     getWelcomeMessage() {
@@ -55,8 +56,27 @@ class BlockController {
         });
     }
 
+    getBlocksByWalletAddress() {
+        this.app.get("/stars/address::address", async (req, res) => {
+            // Add your code here
+            let blocks = await Blockchain.getBlocksByWalletAddress(req.params.address);
+            if (blocks.length === 0) {
+                res.status(404);
+                res.json({message: "Not Found"});
+                return;
+            }
+
+            blocks.forEach((block) => {
+
+                block.body.star.storyDecoded = Buffer.from(block.body.star.story, "hex").toString("ascii");
+
+            });
+
+            res.json(blocks);
+        });
+    }
     getBlockByHash() {
-        this.app.get("/stars/:hash", async (req, res) => {
+        this.app.get("/stars/hash::hash", async (req, res) => {
             // Add your code here
             let block = await Blockchain.getBlockByHash(req.params.hash);
             if (undefined === block) {

@@ -29,8 +29,28 @@ exports.getLastKey = async function getLastKey() {
             return max - 2;
 };
 
+exports.getBlocksByWalletAddress = async function getBlocksByWalletAddress(address) {
+    let blocks = [];
+    return new Promise(function (resolve, reject) {
+        db.createValueStream()
+            .on('data', function (data) {
+                let b = JSON.parse(data);
+                //compatibility
+                // if (Object.getPrototypeOf(b.body) === String.prototype) return;
+                if(b.height === 0) return;
+                if (b.body.address === address) {
+                    blocks.push(b);
+                }
+            })
+            .on('error', function (err) {
+                reject(err)
+            })
+            .on('close', function () {
+                resolve(blocks);
+            });
+    });
+};
 
-// Get block by hash
 exports.getBlockByHash = async function getBlockByHash(hash) {
     let block = null;
     return new Promise(function (resolve, reject) {

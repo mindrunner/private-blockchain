@@ -1,6 +1,6 @@
-# Private Blockchain
+# Private Blockchain Notary Service
 
-This is a simple private blockchain based on Node.js, leveldb and Express.js
+This is a simple private blockchain notary service based on Node.js, leveldb and Express.js
 
 ## Getting Started
 
@@ -31,65 +31,180 @@ node app/main.js
 
 ## Endpoints
 
-### GET Block Endpoint
-Configure a GET request using URL path with a block height parameter. The response for the endpoint provides block object is JSON format.
+
+### POST endpoint to validate request with JSON response.
 
 ### URL
-http://localhost:8000/block/[blockheight]
+http://localhost:8000/requestValidation
 
-### Example URL path
-http://localhost:8000/block/0, where '0' is the block height.
+### Example Data to send
+```
+{ "address":"19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL" }
+```
+### Example Response
+```
+{
+    "walletAddress": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
+    "requestTimeStamp": "1544451269",
+    "message": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL:1544451269:starRegistry",
+    "validationWindow": 300
+}
+```
+
+### POST endpoint validates message signature with JSON response.
+### URL
+http://localhost:8000/message-signature/validate
+
+### Example Data to send
+```
+{
+"address":"19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
+ "signature":"H8K4+1MvyJo9tcr2YN2KejwvX1oqneyCH+fsUL1z1WBdWmswB9bijeFfOfMqK68kQ5RO6ZxhomoXQG3fkLaBl+Q="
+}
+```
+### Example Response
+```
+{
+    "registerStar": true,
+    "status": {
+        "address": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
+        "requestTimeStamp": "1544454641",
+        "message": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL:1544454641:starRegistry",
+        "validationWindow": 193,
+        "messageSignature": true
+    }
+}
+```
+
+
+### POST endpoint with JSON response that submits the Star information to be saved in the Blockchain.
+### URL
+http://localhost:8000/block
+
+
+### Example Data to send
+```
+{
+    "address": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
+    "star": {
+                "dec": "68° 52' 56.9",
+                "ra": "16h 29m 1.0s",
+                "story": "Found star using https://www.google.com/sky/"
+            }
+}
+```
+### Example Response
+```
+{
+    "hash": "8098c1d7f44f4513ba1e7e8ba9965e013520e3652e2db5a7d88e51d7b99c3cc8",
+    "height": 1,
+    "body": {
+        "address": "19xaiMqayaNrn3x7AjV5cU4Mk5f5prRVpL",
+        "star": {
+            "ra": "16h 29m 1.0s",
+            "dec": "68° 52' 56.9",
+            "story": "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f"
+        }
+    },
+    "time": "1544455399",
+    "previousBlockHash": "639f8e4c4519759f489fc7da607054f50b212b7d8171e7717df244da2f7f2394"
+}
+```
+
+
+
+### Get Star block by hash with JSON response.
+
+### URL
+http://localhost:8000/stars/hash:[HASH]
 
 ### Response
 The response for the endpoint provides block object is JSON format.
 
 ### Example GET Response
-For URL, http://localhost:8000/block/0
 ```
-HTTP/1.1 200 OK
-content-type: application/json; charset=utf-8
-cache-control: no-cache
-content-length: 179
-accept-ranges: bytes
-Connection: close          
-{"hash":"49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3","height":0,"body":"First block in the chain - Genesis block","time":"1530311457","previousBlockHash":""}
+{
+  "hash": "a59e9e399bc17c2db32a7a87379a8012f2c8e08dd661d7c0a6a4845d4f3ffb9f",
+  "height": 1,
+  "body": {
+    "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+    "star": {
+      "ra": "16h 29m 1.0s",
+      "dec": "-26° 29' 24.9",
+      "story": "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f",
+      "storyDecoded": "Found star using https://www.google.com/sky/"
+    }
+  },
+  "time": "1532296234",
+  "previousBlockHash": "49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"
+}
 ```
 
 
-## POST Block Endpoint
-Post a new block with data payload option to add data to the block body. The block body supports a string of text. The response for the endpoint provides block object in JSON format.
+## Get Star block by wallet address (blockchain identity) with JSON response.
+
+### URL
+http://localhost:8000/stars/address:[ADDRESS]
 
 ### Response
-The response for the endpoint provides block object in JSON format.
+The response for the endpoint provides block object is JSON format.
 
-### Example POST response
-For URL: http://localhost:8000/block
-
+### Example GET Response
 ```
-HTTP/1.1 200 OK
-content-type: application/json; charset=utf-8
-cache-control: no-cache
-content-length: 238
-Connection: close
-{"hash":"ffaffeb2330a12397acc069791323783ef1a1c8aab17ccf2d6788cdab0360b90","height":1,"body":"Testing block with test string data","time":"1531764891","previousBlockHash":"49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"}
+[
+  {
+    "hash": "a59e9e399bc17c2db32a7a87379a8012f2c8e08dd661d7c0a6a4845d4f3ffb9f",
+    "height": 1,
+    "body": {
+      "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+      "star": {
+        "ra": "16h 29m 1.0s",
+        "dec": "-26° 29' 24.9",
+        "story": "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f",
+        "storyDecoded": "Found star using https://www.google.com/sky/"
+      }
+    },
+    "time": "1532296234",
+    "previousBlockHash": "49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"
+  },
+  {
+    "hash": "6ef99fc533b9725bf194c18bdf79065d64a971fa41b25f098ff4dff29ee531d0",
+    "height": 2,
+    "body": {
+      "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+      "star": {
+        "ra": "17h 22m 13.1s",
+        "dec": "-27° 14' 8.2",
+        "story": "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f",
+        "storyDecoded": "Found star using https://www.google.com/sky/"
+      }
+    },
+    "time": "1532330848",
+    "previousBlockHash": "a59e9e399bc17c2db32a7a87379a8012f2c8e08dd661d7c0a6a4845d4f3ffb9f"
+  }
+]
 ```
 
-## Testing web code
+### Get star block by star block height with JSON response.
 
-1: Open a command prompt or shell terminal after install node.js.
-2: run app.js with node interpreter
+### URL
+http://localhost:8000/block/[HEIGHT]
 
+### Example GET Response
 ```
-node app/app.js
-```
-
-3: Use POST to Create a Block
-```
-curl -i -H "Accept: application/json" -H "Content-Type: text/plain" --data "Some Data" -X POST  http://localhost:8000/block
-```
-
-4: Use GET to Get a Block
-```
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET  http://localhost:8000/block/1
-
+{
+  "hash": "a59e9e399bc17c2db32a7a87379a8012f2c8e08dd661d7c0a6a4845d4f3ffb9f",
+  "height": 1,
+  "body": {
+    "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+    "star": {
+      "ra": "16h 29m 1.0s",
+      "dec": "-26° 29' 24.9",
+      "story": "466f756e642073746172207573696e672068747470733a2f2f7777772e676f6f676c652e636f6d2f736b792f",
+      "storyDecoded": "Found star using https://www.google.com/sky/"
+    }
+  },
+  "time": "1532296234",
+  "previousBlockHash": "49cce61ec3e6ae664514d5fa5722d86069cf981318fc303750ce66032d0acff3"
+}
 ```
