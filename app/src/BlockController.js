@@ -3,7 +3,6 @@ const RequestObject = require("./requestObject").RequestObject;
 const Block = require('./block.js').Block;
 const Blockchain = require('./blockchain.js').Blockchain;
 const util = require('util');
-const Star = require("./star").Star;
 const ValidRequest = require("./validRequest").ValidRequest;
 
 const TimeoutRequestsWindowTime = 5 * 60 * 1000;
@@ -97,30 +96,24 @@ class BlockController {
             if (req.body !== undefined && req.body !== "" && Object.keys(req.body).length !== 0) {
 
                 if (req.body.address in this.mempoolValid) {
-                    let star = new Star();
-                    star.cen = req.body.star.cen;
-                    star.ra = req.body.star.ra;
-                    star.dec = req.body.star.dec;
-                    star.mag = req.body.star.mag;
-
                     let body = {
                         address: req.body.address,
                         star: {
                             ra: req.body.star.ra,
                             dec: req.body.star.dec,
-                            mag: req.body.star.mag | null,
-                            cen: req.body.star.cen | null,
                             story: Buffer.from(req.body.star.story, 'ascii').toString('hex')
                         }
                     };
+                    if(null !== req.body.star.mag) body.star.mag = req.body.star.mag;
+                    if(null !== req.body.star.cen) body.star.cen = req.body.star.cen;
                     let block = new Block(body);
                     await this.blockchain.addBlock(block);
 
                     block.body.star.storyDecoded = Buffer.from(block.body.star.story, "hex").toString("ascii");
 
-
                     res.status(201);
                     res.json(block);
+                    delete this.mempoolValid[req.body.address];
                 } else {
                     res.status(404);
                     res.json({message: "Request not found!"});

@@ -63,6 +63,26 @@ describe("BlockController", function () {
                 .end(done)
         });
 
+        it("try to create another star", function (done) {
+            let star = {
+                "address": testAddress,
+                "star": {
+                    "dec": "67° 52' 56.9",
+                    "ra": "14h 29m 1.0s",
+                    "story": "This star does not exist and should never do!"
+                }
+            };
+
+            supertest(blockAPI.app)
+                .post("/block")
+                .send(star)
+                .expect((res) => {
+                    if (res.clientError !== true) throw new Error("Creating more than one star is not allowed!");
+                })
+                .end(done)
+        });
+
+
         it("get star by hash", function (done) {
             supertest(blockAPI.app)
                 .get("/stars/hash:" + starhash)
